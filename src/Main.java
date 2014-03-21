@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import models.Behavior;
 import models.Overview;
 import models.Row;
 import utils.FileUtil;
@@ -17,7 +18,11 @@ public class Main {
 
 		Overview ov = new Overview(rows);
 		//ov.showBrandPurchasedNumber();
-		ov.showUserRelatedBrands();
+		//ov.showUserRelatedBrands();
+	
+		ArrayList<Integer> typeArrayList = new ArrayList<Integer>();
+		typeArrayList.add(Behavior.BUY);
+		ov.showUserBehaviorsBrands(typeArrayList);
 	}
 
 }
