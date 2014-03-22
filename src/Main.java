@@ -22,7 +22,11 @@ public class Main {
 	
 		ArrayList<Integer> typeArrayList = new ArrayList<Integer>();
 		typeArrayList.add(Behavior.BUY);
-		ov.showUserBehaviorsBrands(typeArrayList);
+		typeArrayList.add(Behavior.CLICK);
+		typeArrayList.add(Behavior.FAV);
+		typeArrayList.add(Behavior.INCART);
+		//ov.showUserBehaviorsBrands(typeArrayList);
+		ov.showUserBehaviorsBrandsNumber(typeArrayList);
 	}
 
 }

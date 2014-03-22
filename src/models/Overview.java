@@ -154,6 +154,44 @@ public class Overview {
 			System.out.print("\n");
 		}
 	}
+	
+	public void showUserBehaviorsBrandsNumber(ArrayList<Integer> typeArray) {
+		HashMap<String, TreeSet<String>> userRelatedMap = new HashMap<String, TreeSet<String>>();
+		
+		// progress all the rows
+		for (Row row : rows) {
+			String uid = row.getUid();
+			String bid = row.getBid();
+			int type = row.getType();
+			
+			// if this behavior is concerned
+			if (typeArray.indexOf(type) >= 0) {
+				TreeSet<String> brandSet = null;
+
+				if (userRelatedMap.containsKey(uid)) {
+					brandSet = userRelatedMap.get(uid);
+					brandSet.add(bid);
+				} else {
+					brandSet = new TreeSet<String>();
+					brandSet.add(bid);
+				}
+
+				userRelatedMap.put(uid, brandSet);
+			}
+		}
+		
+		// output the result
+		Iterator<String> iterator = userRelatedMap.keySet().iterator();
+		while (iterator.hasNext()) {
+			String uid = iterator.next();
+			TreeSet<String> brandSet = userRelatedMap.get(uid);
+
+			System.out.print(uid);
+			System.out.print(",");
+			System.out.print(brandSet.size());
+			System.out.print("\n");
+		}
+	}
 
 	class SortByTimes implements Comparator {
 
