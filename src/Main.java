@@ -1,10 +1,9 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-
 import models.Behavior;
 import models.Overview;
 import models.Row;
 import utils.FileUtil;
+
+import java.util.ArrayList;
 
 public class Main {
 	private static final String INPUT_PATH = "C://t_alibaba_data.csv";
@@ -27,6 +26,6 @@ public class Main {
 		typeArrayList.add(Behavior.INCART);
 		//ov.showUserBehaviorsBrands(typeArrayList);
 		ov.showUserBehaviorsBrandsNumber(typeArrayList);
-	}
+    }
 
 }

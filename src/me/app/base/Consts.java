@@ -21,7 +21,7 @@ public class Consts {
             return this.code;
         }
 
-        public ActionType fromCode(Integer code) {
+        public static ActionType fromCode(Integer code) {
             switch (code) {
                 case 0:
                     return CLICK;
