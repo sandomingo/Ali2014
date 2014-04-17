@@ -13,12 +13,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 统计用户等各类数据 User: wuxuef Date: 3/24/14 Time: 05:00 PM
  */
 public class UserStatistics extends Statistics {
-	private List<User> users = new ArrayList<User>();
+	private static List<User> users = new ArrayList<User>();
 
 	public UserStatistics(Date trainStart, Date trainEnd, Date testStart,
 			Date testEnd) {
 		super();
-		createUsers(trainStart, trainEnd, testStart, testEnd);
+		super.forecastDate = testStart;
+		if (users.isEmpty()) {
+			createUsers(trainStart, trainEnd, testStart, testEnd);
+		}
 	}
 
 	public List<User> getUsers() {

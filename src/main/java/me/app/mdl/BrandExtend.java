@@ -3,28 +3,37 @@ package me.app.mdl;
 import java.util.ArrayList;
 import java.util.Date;
 
-import me.app.base.Consts;
-import me.app.base.Consts.BrandType;
 
+/**
+ * 继承自brand，并对brand的behavior数据进行统计分析
+ * 而将结果保存在该类中。
+ *
+ * @author wuxuef2
+ * @date: Apr 17, 2014 11:17:47 AM
+ * @version 0.1
+ */
 public class BrandExtend extends Brand {
-	private double score;
+	private double score;				// 商品热度评分
 	
-	private int buyTimes = 0;
-	private int clickTimes = 0;
-	private int favouriteTimes = 0;
-	private int add2cartTimes = 0;
+	private int buyTimes = 0;			// 商品被购买次数
+	private int clickTimes = 0;			// 商品被点击次数
+	private int favouriteTimes = 0;		// 商品加心愿单次数
+	private int add2cartTimes = 0;		// 商品加购物车次数
 	
-	private int buyPersons = 0;
-	private int clickPersons = 0;
-	private int favouritePersons = 0;
-	private int add2cartPersons = 0;
+	private int buyPersons = 0;			// 商品购买人数
+	private int clickPersons = 0;		// 商品点击人数
+	private int favouritePersons = 0;	// 商品加心愿单人数
+	private int add2cartPersons = 0;	// 商品加购物车人数
 	
-	private int mostBuyTimes = 0;
-	private Date lastBuyTimes = null;
+	private int mostBuyTimes = 0;		// 商品被单人最多购买次数
+	private Date lastBuyTimes = null;	// 商品最后一次被购买时间
 	
-	private ArrayList<Long> belongClass = new ArrayList<Long>();
+	// 替代品（同类商品）ID存贮列表
+	private ArrayList<Long> succedaneum = new ArrayList<Long>();
+	// 互补品 （关联商品）ID存贮列表
 	private ArrayList<Long> complements = new ArrayList<Long>();
 	
+	// 所属类别ID存贮列表（根据替代品差别类型判断）
 	private ArrayList<Long> classId = new ArrayList<Long>();
 
 	public double getScore() {
@@ -105,12 +114,12 @@ public class BrandExtend extends Brand {
 		// TODO Auto-generated constructor stub
 	}
 
-	public ArrayList<Long> getBelongClass() {
-		return belongClass;
+	public ArrayList<Long> getSuccedaneum() {
+		return succedaneum;
 	}
 
-	public void setBelongClass(ArrayList<Long> belongClass) {
-		this.belongClass = belongClass;
+	public void setSuccedaneum(ArrayList<Long> succedaneum) {
+		this.succedaneum = succedaneum;
 	}
 
 	public ArrayList<Long> getComplements() {

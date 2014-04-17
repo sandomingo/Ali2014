@@ -15,7 +15,7 @@ public class Behavior {
     private Long brandID; // 涉及的品牌ID
     private Consts.ActionType type; // 行为类型，如：点击，购买，收藏，加入购物车
     private Date visitDatetime; // 行为发生时间
-    private Long uid;
+    private Long uid;	// 涉及的用户ID
 
     public Behavior(Long brandID, Long uid, Consts.ActionType type, Date visitDatetime) {
         this.brandID = brandID;

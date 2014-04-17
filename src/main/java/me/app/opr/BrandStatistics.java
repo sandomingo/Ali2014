@@ -12,33 +12,53 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.print.attribute.DateTimeSyntax;
-
 import me.app.base.Consts;
-import me.app.mdl.Brand;
 import me.app.mdl.Behavior;
 import me.app.mdl.BrandExtend;
 import me.app.mdl.Row;
 import me.app.mdl.User;
 import me.app.utl.FileUtil;
 
+
+/**
+ * 用于统计Brand的各种信息
+ *
+ * @author wuxuef2
+ * @date: Apr 17, 2014 12:39:41 PM
+ * @version 
+ */
 public class BrandStatistics extends Statistics{
-	private List<BrandExtend> brands = new ArrayList<BrandExtend>();
+	// 存贮所有以brands为单元的信息
+	private static List<BrandExtend> brands = new ArrayList<BrandExtend>();
+	// 存贮对brands进行聚类后的聚类信息
 	private Map<Long, ArrayList<Long>> classes = null;
 	
 	public BrandStatistics(Date trainStart, Date trainEnd, Date testStart,
 			Date testEnd) {
 		super();
-		createBrands(trainStart, trainEnd, testStart, testEnd);
+		super.forecastDate = testStart;
+		if (brands.isEmpty()) {
+			createBrands(trainStart, trainEnd, testStart, testEnd);
+		}
 //		classes = createClass();
 //		setClassInfo();
 	}
 	
+	
+	/**
+	 * 从数据文件中生成brand的信息，并对brand的一些属性进行统计
+	 * 
+	 * @param trainStart	训练数据开始时间
+	 * @param trainEnd		训练数据结束时间
+	 * @param testStart		测试数据开始时间
+	 * @param testEnd		测试数据结束时间
+	 */
 	private void createBrands(Date trainStart, Date trainEnd, Date testStart,
 			Date testEnd) {
 		ArrayList<Row> rows = FileUtil.readFile(Consts.INPUT_PATH);
 		HashMap<Long, List<Behavior>> ConsumerecordSets = new HashMap<Long, List<Behavior>>();
 		
+		// 以brandID为标志，把行为数据分到对应的brand中
 		for (int i = 0; i < rows.size(); i++) {
 			Long uid = Long.parseLong(rows.get(i).getUid());
 			Long brandID = Long.parseLong(rows.get(i).getBid());
@@ -60,6 +80,8 @@ public class BrandStatistics extends Statistics{
 			}
 		}
 		
+		// 生成brand类并加入到brands中存贮
+		// 并统计部分的属性
 		Iterator<Entry<Long, List<Behavior>>> it = ConsumerecordSets.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<Long, List<Behavior>> entry = (Entry<Long, List<Behavior>>)it.next();
@@ -85,19 +107,34 @@ public class BrandStatistics extends Statistics{
 			
 			brands.add(tmpBrand);
 		}
+		
+		// 统计生成brand中的全部统计信息，统计信息具体见BrandExtend
 		learnFeature(trainStart, trainEnd, testStart, testEnd);
 	}
 	
+	
+	/**
+	 * 统计生成brand中的全部统计信息，统计信息具体见BrandExtend
+	 * 
+	 * @param trainStart	训练数据开始时间
+	 * @param trainEnd		训练数据结束时间
+	 * @param testStart		测试数据开始时间
+	 * @param testEnd		测试数据结束时间
+	 */
 	public void learnFeature(Date trainStart, Date trainEnd, Date testStart,
 			Date testEnd) {
+		// 用于辅助统计brand的信息
 		UserStatistics userStatistics = new UserStatistics(trainStart, trainEnd, testStart, testEnd);
-
+		
+		// 根据每个用户的行为数据计算品牌的属性
 		for (int i = 0; i < userStatistics.getUsers().size(); i++) {
 			User user = userStatistics.getUsers().get(i);			
 			List<Behavior> behaviors = (List<Behavior>) user.getBehaviors();
-						
+			
+			// 对每个用户的所有行为数据进行计算
 			for (int j = 0; j < behaviors.size(); j++) {
 				if (behaviors.get(j).getType() == Consts.ActionType.BUY) {
+					// 统计单个用户对该品牌的最多购买次数
 					int times = getTopicActionTimes(behaviors, 
 							behaviors.get(j).getBrandID(), 
 							Consts.ActionType.BUY, 
@@ -107,6 +144,7 @@ public class BrandStatistics extends Statistics{
 						brand.setMostBuyTimes(times);
 					}
 					
+					// 统计该品牌最后一次被购买的时间
 					if (brand.getLastBuyTimes() == null
 							|| behaviors.get(j).getVisitDatetime().after(brand.getLastBuyTimes())) {
 						brand.setLastBuyTimes(behaviors.get(j).getVisitDatetime());
@@ -114,11 +152,15 @@ public class BrandStatistics extends Statistics{
 				}
 			}
 			
+			// 对单个用户的行为数据按时间片进行切割
+			// 并存贮在holder中
 			HashMap<Long, ArrayList<Behavior>> holder = new HashMap<Long, ArrayList<Behavior>>();
 			for (int k = 0; k < behaviors.size(); k++) {
+				// 以每个行为数据的操作时间做为时间片的起始点
 				long days = behaviors.get(k).getVisitDatetime().getTime() / (24 * 60 * 60 * 1000);
 				Set<Long> set = holder.keySet();
 				Iterator<Long> it = set.iterator();
+				// 迭代对行为数据分类
 				while (it.hasNext()) {
 					Long time = (Long)it.next();
 					if (isRecent(time, days)) {
@@ -133,17 +175,24 @@ public class BrandStatistics extends Statistics{
 				}
 			}
 			
+			/*
+			 * 根据时间片中出现的购买次数对Brand进行分类
+			 * 设想：用户在同一时间片内只会买一个商品
+			 * 因此，如果在时间片内买了多个Brand，那么这多个Brand为关联品牌（互补品）
+			 * 如果在时间片内只买了一个Brand，而点击了之个Brand，那么这些Brand为同一类商品（替代品）
+			 */
 			Set<Long> set = holder.keySet();
 			Iterator<Long> iterator = set.iterator();
 			while (iterator.hasNext()) {
 				Long time = (Long)iterator.next();
 				List<Behavior> tmpBehaviors = holder.get(time);
-				int buyTimes = getActionTimes(tmpBehaviors, Consts.ActionType.BUY);
+				// 计算该行为数据中的购买次数
+				int buyTimes = getActionTimes(tmpBehaviors, Consts.ActionType.BUY);				
 				
-				if (buyTimes == 1) {
+				if (buyTimes == 1) {		// 统计替代品
 					for (int k = 0; k < tmpBehaviors.size(); k++) {
 						BrandExtend brand = getBrand(tmpBehaviors.get(k).getBrandID());
-						List<Long> belongsList = brand.getBelongClass();
+						List<Long> belongsList = brand.getSuccedaneum();
 						for (int j = 0; j < tmpBehaviors.size(); j++) {
 							if (tmpBehaviors.get(j).getBrandID() != brand.getId() && !belongsList.contains(tmpBehaviors.get(j).getBrandID())) {
 								belongsList.add(tmpBehaviors.get(j).getBrandID());
@@ -151,8 +200,9 @@ public class BrandStatistics extends Statistics{
 						}
 					}
 				}
-				else if (buyTimes >= 2) {
-					List<Long> tmpHolder = new ArrayList<Long>();
+				else if (buyTimes >= 2) {	// 统计互补品
+					List<Long> tmpHolder = new ArrayList<Long>();	// 保存互补品
+					// 标志避免对同一商品进行多次关联商品生成
 					HashMap<Long, Integer> flag = new HashMap<Long, Integer>();
 					for (int k = 0; k < tmpBehaviors.size(); k++) {
 						if (tmpBehaviors.get(k).getType() == Consts.ActionType.BUY/* && !tmpHolder.contains(tmpBehaviors.get(k).getBrandID())*/) {
@@ -161,7 +211,7 @@ public class BrandStatistics extends Statistics{
 						}
 					}
 					
-					
+					// 生成关联商品对
 					for (int k = 0; k < tmpHolder.size(); k++) {
 						BrandExtend brand = getBrand(tmpHolder.get(k));
 						if (flag.get(brand.getId()) == 0) {
@@ -194,6 +244,11 @@ public class BrandStatistics extends Statistics{
 		}
 	}
 	
+	/**
+	 * 根据已经统计出来的各个Brand的替代品信息，生成相应的类别，并用一个递增的整数表示所有的类别
+	 * 
+	 * @return 返回类别信息（类别的ID及属于该类的Brand ID
+	 */
 	public Map<Long, ArrayList<Long>> createClass() {
 		Map<Long, ArrayList<Long>> classes = new HashMap<Long, ArrayList<Long>>();
 		Long id = 0L;
@@ -201,12 +256,12 @@ public class BrandStatistics extends Statistics{
 		for (int i = 0; i < brands.size(); i++) {
 			ArrayList<Long> items = new ArrayList<Long>();
 			BrandExtend brand = brands.get(i);
-			if (brand.getBelongClass().size() != 0) {			
-				for (int j = 0; j < brand.getBelongClass().size(); j++) {
-					items.add(brand.getBelongClass().get(j));
-					BrandExtend succedaneum = getBrand(brand.getBelongClass().get(j));
-					for (int k = 0; k < succedaneum.getBelongClass().size(); k++) {
-						items.add(succedaneum.getBelongClass().get(k));
+			if (brand.getSuccedaneum().size() != 0) {			
+				for (int j = 0; j < brand.getSuccedaneum().size(); j++) {
+					items.add(brand.getSuccedaneum().get(j));
+					BrandExtend succedaneum = getBrand(brand.getSuccedaneum().get(j));
+					for (int k = 0; k < succedaneum.getSuccedaneum().size(); k++) {
+						items.add(succedaneum.getSuccedaneum().get(k));
 					}
 				}	
 				classes.put(id, getTopItems(items, 2, items.size()));
@@ -218,6 +273,10 @@ public class BrandStatistics extends Statistics{
 		return classes;
 	}
 	
+	
+	/**
+	 * 对Brand设置其所属类别信息
+	 */
 	public void setClassInfo() {
 		Set<Long> set = classes.keySet();
 		Iterator<Long> iterator = set.iterator();
@@ -231,16 +290,6 @@ public class BrandStatistics extends Statistics{
 		}
 	}
 	
-	public void setForecastMode(Date deadline) {
-		for (int j = 0; j < brands.size(); j++) {
-			BrandExtend brand = brands.get(j);
-			for (int i = brand.getBehaviors().size() - 1; i >= 0; i--) {
-				if (brand.getBehaviors().get(i).getVisitDatetime().after(deadline)) {
-					brand.getBehaviors().remove(i);
-				}
-			}
-		}
-	}
 	
 	public List<BrandExtend> getBrands() {
 		return brands;
@@ -254,7 +303,14 @@ public class BrandStatistics extends Statistics{
 		
 		return null;
 	}
-		
+	
+	
+	/**
+	 * 计算所有商品的热度信息
+	 * 
+	 * @param threshold	只返回大于阀值的统计
+	 * @return	返回Brand ID 与 对应热度信息
+	 */
 	public HashMap<Long, Double> getHot(double threshold) {		
 		HashMap<Long, Double> hotBrands = new HashMap<Long, Double>();
 		for (int i = 0; i < brands.size(); i++) {
@@ -268,6 +324,14 @@ public class BrandStatistics extends Statistics{
 		return hotBrands;
 	}
 	
+	
+	/**
+	 * 计算一个Brand被所有用户操作时间间隔的平均
+	 * 两次同类型操作的时间间隔对于所有用户所有两次时间间隔操作的平均
+	 * 
+	 * @param type	操作类型
+	 * @return	Brand ID 及对应的 时间间隔平均（以天为单位）
+	 */
 	public HashMap<Long, Double> getActionTimeSpan(Consts.ActionType type) {
 		HashMap<Long, Double> timespans = new HashMap<Long, Double>();
 		for (int i = 0; i < brands.size(); i++) {
@@ -279,6 +343,13 @@ public class BrandStatistics extends Statistics{
 		return timespans;
 	}
 	
+	/**
+	 * 计算每个用户对Brand的每个月操作次数的平均
+	 * 
+	 * @param type	操作类型
+	 * @param personsNumber	用于返回来操作的人数
+	 * @return 每个人对相应Brand的每月操作频率
+	 */
 	public HashMap<Long, Double> getActionFrequenceEveryMonthEveryPerson(Consts.ActionType type, HashMap<Long, Integer> personsNumber) {
 		HashMap<Long, Double> hotBrands = new HashMap<Long, Double>();
 		for (int i = 0; i < brands.size(); i++) {
@@ -295,7 +366,8 @@ public class BrandStatistics extends Statistics{
 		hotBrands = (HashMap<Long, Double>) sortByValue(hotBrands);	
 		return hotBrands;
 	}
-		
+	
+	/********************************未使用的代码（尝试性实现的代码，有bug）****************************************************/
 	public void isBuyAfterOtherAction(Consts.ActionType type) {
 		int counter = 0;
 		int buyCounter = 0;
@@ -375,4 +447,5 @@ public class BrandStatistics extends Statistics{
 		
 		return counter;
 	}
+	/********************************未使用的代码（尝试性实现的代码，有bug）****************************************************/
 }

@@ -1,7 +1,15 @@
 package me.app.mdl;
 
+
+/**
+ * 用于保存从数据文件中读到的每一行数据。
+ *
+ * @author wuxuef2
+ * @date: Apr 17, 2014 11:19:26 AM
+ * @version 
+ */
 public class Row {
-	private String uid;
+	private String uid;	
 	private String bid;
 	private int type;
 	private String date;

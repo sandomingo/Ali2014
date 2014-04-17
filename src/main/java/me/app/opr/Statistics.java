@@ -8,29 +8,41 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+/**
+ * 抽象类，主要为功能函数，为brand statistics 和 user statistics
+ * 调用
+ *
+ * @author wuxuef2
+ * @date: Apr 17, 2014 8:02:26 PM
+ * @version 
+ */
 public abstract class Statistics {
 	protected static int monthNum = 4;	
-	protected static Date forecastDate;
+	protected Date forecastDate;
 	
-	static {
-		Calendar myDate = Calendar.getInstance();
-		myDate.set(Calendar.MONTH, 8);
-		myDate.set(Calendar.DAY_OF_MONTH, 15);
-		forecastDate = myDate.getTime();
-	}
+	// 按时间递增比较函数
+	Comparator<Behavior> comparatorAsc = new Comparator<Behavior>() {
+		public int compare(Behavior behavior1, Behavior behavior2) {
+			return behavior1.getVisitDatetime().compareTo(
+					behavior2.getVisitDatetime());
+		}
+	};
+
+	// 按时间递减比较函数
+	Comparator<Behavior> comparatorDesc = new Comparator<Behavior>() {
+		public int compare(Behavior behavior1, Behavior behavior2) {
+			return -behavior1.getVisitDatetime().compareTo(
+					behavior2.getVisitDatetime());
+		}
+	};
 	
-	Comparator<Behavior> comparatorAsc = new Comparator<Behavior>(){
-	   public int compare(Behavior behavior1, Behavior behavior2) {
-		   return behavior1.getVisitDatetime().compareTo(behavior2.getVisitDatetime());
-	   }
-	 };
-	 
-	 Comparator<Behavior> comparatorDesc = new Comparator<Behavior>(){
-		   public int compare(Behavior behavior1, Behavior behavior2) {
-			   return -behavior1.getVisitDatetime().compareTo(behavior2.getVisitDatetime());
-		   }
-		 };
 	
+	/**
+	 * 字符串转日期函数
+	 * 
+	 * @param dateString
+	 * @return
+	 */
 	public static Date string2Date(String dateString) {
         int month = 0;
         int day = 0;
@@ -43,12 +55,22 @@ public abstract class Statistics {
             System.err.println(dateString);
             System.exit(1);
         }
-        Date newDate = new Date();
-        newDate.setMonth(month-1);
-        newDate.setDate(day);
+        
+        Calendar myDate = Calendar.getInstance();
+		myDate.set(Calendar.MONTH, month-1);
+		myDate.set(Calendar.DAY_OF_MONTH, day);
+		Date newDate = myDate.getTime();
+
         return newDate;
     }
 	
+	
+	/**
+	 * 获取各种操作的权重
+	 * 
+	 * @param type
+	 * @return
+	 */
 	protected double getWeight(Consts.ActionType type) {
 		double weight = 0;
 		
@@ -71,6 +93,12 @@ public abstract class Statistics {
 		return weight;
 	}
 	
+	/**
+	 * 对map按value项进行排序
+	 * 
+	 * @param map
+	 * @return
+	 */
 	public <K, V extends Comparable<? super V>> Map<K, V> sortByValue( Map<K, V> map ) {
 	    List<Map.Entry<K, V>> list =
 	        new LinkedList<Map.Entry<K, V>>( map.entrySet() );
@@ -90,6 +118,13 @@ public abstract class Statistics {
 	    return result;
 	}
 	
+	/**
+	 * 获取user or brand中的behaviors中各种操作发生的次数
+	 * 
+	 * @param topic
+	 * @param actionType
+	 * @return
+	 */
 	public int getActionTimes(Topic topic, Consts.ActionType actionType) {
 		List<Behavior> consumerecords = topic.getBehaviors();
 		int Times = 0;
@@ -101,6 +136,13 @@ public abstract class Statistics {
 		return Times;
 	}
 	
+	/**
+	 * 在一个行为数据集中，获取某一操作发生的次数
+	 * 
+	 * @param consumerecords
+	 * @param actionType
+	 * @return
+	 */
 	public int getActionTimes(List<Behavior> consumerecords, Consts.ActionType actionType) {
 		int Times = 0;
 		for (int i = 0; i < consumerecords.size(); i++) {
@@ -111,6 +153,12 @@ public abstract class Statistics {
 		return Times;
 	}
 	
+	/**
+	 * 获取user or brand的热度值
+	 * 
+	 * @param topic
+	 * @return
+	 */
 	public double getScore(Topic topic) {
 		double score = 0;
 		for (int j = 0; j < topic.getBehaviors().size(); j++) {
